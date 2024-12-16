@@ -69,3 +69,19 @@ The ```tool_choice="AnswerQuestion"``` explicitly tells the LLM which tool it mu
 first_responder = first_responder_prompt_template | llm.bind_tools(
     tools=[AnswerQuestion], tool_choice="AnswerQuestion"
 )
+
+
+if __name__ == "__main__":
+    print("Running Chains directly")
+    human_message = HumanMessage(
+        content="Write about AI-Powered SOC / autonomous soc problem domain,"
+        " list startups that do that and raised capital."
+    )
+    chain = (
+        first_responder_prompt_template
+        | llm.bind_tools(tools=[AnswerQuestion], tool_choice="AnswerQuestion")
+        | parser_pydantic
+    )
+
+    res = chain.invoke(input={"messages": [human_message]})
+    print(res)
