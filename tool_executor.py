@@ -39,6 +39,7 @@ def execute_tools(state: List[BaseMessage]) -> List[ToolMessage]:
     tool_invocations = []
 
     for parsed_call in parsed_tool_calls:
+        print(parsed_call)
         for query in parsed_call["args"]["search_queries"]:
             tool_invocations.append(
                 ToolInvocation(

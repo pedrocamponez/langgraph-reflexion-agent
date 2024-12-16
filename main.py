@@ -40,3 +40,7 @@ graph.get_graph().draw_mermaid_png(output_file_path="graph.png")
 
 if __name__ == '__main__':
     print("Hello Reflexion")
+    res = graph.invoke(
+        "Write about AI-Powered SOC / autonomous SOC problem domain, list startups that do that and raised capital."
+    )
+    print(res[-1].tool_calls[0]["args"]["answer"])
