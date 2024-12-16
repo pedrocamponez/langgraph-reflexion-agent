@@ -1,12 +1,24 @@
 from typing import List
 
 from dotenv import load_dotenv
+from langchain_community.tools import TavilySearchResults
+from langchain_community.utilities.tavily_search import TavilySearchAPIWrapper
 from langchain_core.messages import BaseMessage, ToolMessage, HumanMessage, AIMessage
+from langgraph.prebuilt import ToolInvocation, ToolExecutor
 
-from schemas import AnswerQuestion
+from chains import parser
+from schemas import AnswerQuestion, Reflection
 
 load_dotenv()
 
+search = TavilySearchAPIWrapper()
+tavily_tool = TavilySearchResults(api_wrapper=search, max_results=5)
+"""
+We need a ToolExecutor because we want to make this search async, instead of sync.
+The ToolExecutor has a batch method in RunnableCallable->Runnable, which takes all the tool invocations and simply executes with a thread pool
+running everything in parallel.
+"""
+tool_executor = ToolExecutor([tavily_tool])
 
 """
 The execute_tools function is going to receive a STATE (which is basically a list of messages),
@@ -17,7 +29,24 @@ return a list of tool messages.
 
 def execute_tools(state: List[BaseMessage]) -> List[ToolMessage]:
     tool_invocation: AIMessage = state[-1] # the state[-1] means that we are always getting the last state when executing tools
+    parsed_tool_calls = parser.invoke(tool_invocation)
 
+    ids = []
+    # In tool_invocations, we are going to save the LangChain elements (objects with information of which tool (function) to use
+    # and with which inputs to call it with.
+    tool_invocations = []
+
+    for parsed_call in parsed_tool_calls:
+        for query in parsed_call["args"]["search_queries"]:
+            tool_invocations.append(
+                ToolInvocation(
+                    tool="tavily_search_results_json",
+                    tool_input=query,
+                )
+            )
+            ids.append(parsed_call["id"])
+    outputs = tool_executor.batch(tool_invocations)
+    pass
 
 
 if __name__ == '__main__':
